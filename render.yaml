@@ -1,0 +1,95 @@
+# Render Blueprint Configuration
+# This file defines the infrastructure for your portfolio application on Render
+# For more information: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service (FastAPI with Python)
+  - type: web
+    name: portfolio-backend
+    env: python
+    region: oregon  # You can change this to a region closer to you
+    buildCommand: |
+      cd Portfolio/backend &&
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    startCommand: cd Portfolio/backend && uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # MongoDB connection string - REQUIRED
+      # Set this in Render dashboard: Settings > Environment > Add Environment Variable
+      - key: MONGO_URL
+        sync: false  # This needs to be manually configured in Render dashboard
+      
+      # Database name
+      - key: DB_NAME
+        value: portfolio
+      
+      # CORS origins - will be updated after frontend is deployed
+      # Format: comma-separated list of allowed origins
+      - key: CORS_ORIGINS
+        value: "*"  # Change this to your frontend URL after deployment for security
+      
+      # Python environment
+      - key: PYTHON_VERSION
+        value: "3.11"
+    
+    # Health check endpoint
+    healthCheckPath: /api/
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true
+    
+  # Frontend Static Site (React)
+  - type: web
+    name: portfolio-frontend
+    env: static
+    region: oregon  # Should match backend region for better performance
+    buildCommand: |
+      cd Portfolio/frontend &&
+      if [ -f "package.json" ]; then
+        npm install &&
+        npm run build
+      else
+        echo "No package.json found. Please add your React app files to Portfolio/frontend/"
+        mkdir -p build
+        echo "<html><body><h1>Portfolio Frontend</h1><p>Please add your React application files to Portfolio/frontend/ and include a package.json file.</p></body></html>" > build/index.html
+      fi
+    staticPublishPath: Portfolio/frontend/build
+    
+    # Headers for security and caching
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    
+    # Routes configuration for single-page application
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    
+    # Auto-deploy on push to main branch
+    autoDeploy: true
+    
+    # Environment variables for frontend (if needed)
+    envVars:
+      # API URL will be the backend service URL
+      # This will be automatically set by Render based on the backend service
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: portfolio-backend
+          property: host
+
+# Databases (if you want to use Render's managed PostgreSQL instead of MongoDB Atlas)
+# Uncomment and configure if needed
+# databases:
+#   - name: portfolio-db
+#     databaseName: portfolio
+#     user: portfolio_user
+#     plan: starter  # Free tier
