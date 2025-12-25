@@ -18,26 +18,26 @@ services:
       # Set this in Render dashboard: Settings > Environment > Add Environment Variable
       - key: MONGO_URL
         sync: false  # This needs to be manually configured in Render dashboard
-      
+
       # Database name
       - key: DB_NAME
         value: portfolio
-      
+
       # CORS origins - will be updated after frontend is deployed
       # Format: comma-separated list of allowed origins
       - key: CORS_ORIGINS
         value: "*"  # Change this to your frontend URL after deployment for security
-      
+
       # Python environment
       - key: PYTHON_VERSION
         value: "3.11"
-    
+
     # Health check endpoint
     healthCheckPath: /api/
-    
+
     # Auto-deploy on push to main branch
     autoDeploy: true
-    
+
   # Frontend Static Site (React)
   - type: web
     name: portfolio-frontend
@@ -54,7 +54,7 @@ services:
         echo "<html><body><h1>Portfolio Frontend</h1><p>Please add your React application files to Portfolio/frontend/ and include a package.json file.</p></body></html>" > build/index.html
       fi
     staticPublishPath: Portfolio/frontend/build
-    
+
     # Headers for security and caching
     headers:
       - path: /*
@@ -66,16 +66,16 @@ services:
       - path: /static/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
-    
+
     # Routes configuration for single-page application
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
-    
+
     # Auto-deploy on push to main branch
     autoDeploy: true
-    
+
     # Environment variables for frontend (if needed)
     envVars:
       # API URL will be the backend service URL
